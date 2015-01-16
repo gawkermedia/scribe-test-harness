@@ -4,6 +4,9 @@ var Q = require('q');
 var SeleniumServer = require('selenium-webdriver/remote').SeleniumServer;
 var webdriver = require('selenium-webdriver');
 
+// Use Ctrl-C on Windows/Linux, Cmd-C on OSX
+var hotkey = /^darwin/.test(process.platform) ? webdriver.Key.COMMAND : webdriver.Key.CONTROL;
+
 exports.given = function () {
   var args = Object.create(arguments);
   args[0] = 'given ' + args[0];
@@ -107,6 +110,13 @@ exports.whenInsertingHTMLOf = function (content, fn) {
   });
 };
 
+/**
+ * Helper to paste the specified content before executing
+ * a callback. Unfortunately paste will not work in Chrome under OSX
+ * until https://code.google.com/p/chromedriver/issues/detail?id=30
+ * is resolved, so you may want to conditionally skip tests that
+ * use this on that platform.
+ */
 exports.whenPastingHTMLOf = function (content, fn) {
   exports.when('content of "' + content + '" is pasted', function () {
     var pasteBuffer;
@@ -130,10 +140,10 @@ exports.whenPastingHTMLOf = function (content, fn) {
           selection.addRange(range);
         }
       }, content).then(function() {
-        var copy = webdriver.Key.chord(webdriver.Key.COMMAND, 'c');
+        var copy = webdriver.Key.chord(hotkey, 'c');
         return exports.driver.findElement(webdriver.By.tagName('body')).sendKeys(copy);
       }).then(function () {
-        var paste = webdriver.Key.chord(webdriver.Key.COMMAND, 'v');
+        var paste = webdriver.Key.chord(hotkey, 'v');
         return exports.scribeNode.sendKeys(paste);
       }).then(function () {
         return exports.driver.executeScript(function () {
